@@ -1,0 +1,44 @@
+service: my-ruby-lambda-service
+
+provider:
+  name: aws
+  runtime: ruby3.2  # AWS Lambda-supported Ruby version
+  region: us-east-1 # Change if needed
+  memorySize: 128   # Set memory allocation
+  timeout: 10       # Execution timeout
+  iamRoleStatements: # Permissions for Lambda function
+    - Effect: Allow
+      Action:
+        - logs:CreateLogGroup
+        - logs:CreateLogStream
+        - logs:PutLogEvents
+      Resource: "*"
+
+functions:
+  hello:
+    handler: handler.hello
+    environment: # set up environment
+      FEATURE_FLAG: true
+      VERSION: v1.0      
+    events:
+      - http:
+          path: hello
+          method: get
+          cors: true  # Enable CORS for API Gateway
+  parse:
+    handler: parser.parse_funct
+    environment: # set up environment
+      FEATURE_FLAG: true
+      VERSION: v1.0     
+    events:
+      - http:
+          path: parse
+          methdod: post
+          cors: true
+
+
+plugins:
+  - serverless-offline  # Enables local testing
+
+custom:
+  stage: ${opt:stage, 'dev'}  # Default stage is 'dev'
