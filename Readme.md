@@ -340,6 +340,148 @@ describe  AnthemXmlParser do
 
 end    
 ```
+---
+#### Testing the File Through CLI Commands 
+```ruby
+# for json parsing 
+require 'oj'
+require 'json'
+#  handles HTTP request 
+require 'rest-client'
+
+# Define API endpoint converting it into string 
+url = URI.parse("lamda_function_triger_url").to_s
+
+# Path to the playlist XML file
+playlist_file = "/Users/sowmya/Downloads/anthem_sample_input.xml"
+
+# Define request headers
+headers = {
+  accept: 'json',
+  x_api_key: "api_key"
+}
+
+# Define request payload
+payload = {
+  multipart: true,
+  data: {
+    'playlist_id' => 1,
+    "domain_name" => "xyz",
+    "amg_id" => "xyz",
+    "feed_info" => {
+      "feed_code" => "amg",
+      "feed_id" => 1,
+      "feed_name" => "xyz",
+      "input_video_resolution" => ["HD 1080i 29.97 Hz"],
+      "timezone_name" => "Africa/Addis_Ababa",
+      "broadcast_start_time" => "06:00"
+    }
+  }.to_json,
+  playlist_file: File.new(playlist_file, 'rb')
+}
+
+# Make the API request
+response = RestClient::Request.execute(
+  url: url,
+  method: :post,
+  headers: headers,
+  payload: payload
+)
+
+# Parse and pretty-print the response
+puts Oj.load(response.body).to_json
+
+```
+
+
+#### Serverless
+* Api-Rest | You need server
+* Serverles provided by AWS , Google , Azure 
+* Normally server is deployed on the server through AWS EC2 instances 
+* EC2 Can be scalled automatically through ASG managed by ourself
+* AWS Lamda is run through automatically managed by Amazon pricing is done through invocation
+* Serverless can multiply the pods automatically for managing the traffic
+* AWS Lamda fucntion gives you that funtion link through which you can trigger the functio
+* Serverless can go in cold-state and stateless
+* Stateless means saving no conection between another services like MongoDb
+* For Lamda function we can restore the connection through redis for the state management
+---
+## Serverless Framework
+* Use for deploying serverless function through yaml files
+##### Geting started with Serverless templates
+```sh
+# install serverless framework
+brew install serverless
+# create a new template project 
+serverless
+```
+---
+##### Deploying the Serverless function through AWS
+```sh
+# configuring aws 
+export AWS_ACCESS_KEY_ID="your-access-key-id"
+export AWS_SECRET_ACCESS_KEY="your-secret-access-key"
+export AWS_REGION="us-east-1"
+# deploy/redeploy on aws 
+serverless deploy
+# local testing
+serverless offline 
+```
+---
+### serverless.yaml
+* AWS resources will be named like my-ruby-lambda-service-dev-hello based on this.
+* CORS stands for Cross-Origin Resource Sharing.
+
+* It’s a security mechanism implemented by browsers that controls how web pages can request resources from a different domain (a different "origin").
+```yaml
+# service_name-dev-function_name
+service: my-ruby-lambda-service
+
+# defines the cloud provider
+provider:
+  name: aws
+  runtime: ruby3.2  # AWS Lambda-supported Ruby version
+  region: us-east-1 # location for the aws resources  
+  memorySize: 128   # Set memory allocation
+  timeout: 10       # Execution timeout of the fucntion
+  iamRoleStatements: # Permissions for Lambda function to write logs in the cloud-watch
+    - Effect: Allow
+      Action:
+        - logs:CreateLogGroup
+        - logs:CreateLogStream
+        - logs:PutLogEvents
+      Resource: "*"
+# this refers to the actual lamda functions
+functions: 
+  hello: # function_name
+    handler: handler.hello # this refers to the actual function in handler.rb
+    environment: # set up environment
+      FEATURE_FLAG: true
+      VERSION: v1.0
+    events: # what triggers the lamda function
+      - http:
+          path: hello # domain/hello
+          method: get
+          cors: true  # Enable CORS for API Gateway
+  parse:
+    handler: parser.parse_funct
+    environment: # set up environment
+      FEATURE_FLAG: true
+      VERSION: v1.0     
+    events:
+      - http:
+          path: parse
+          method: post
+          cors: true        
+plugins:
+  - serverless-offline  # Enables local testing run line serverless offline
+
+custom:
+  stage: ${opt:stage, 'dev'}  # Default stage is 'dev'
+```
+
+
+
 
 
 
